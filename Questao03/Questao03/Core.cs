@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Questao03
 {
@@ -33,6 +31,16 @@ namespace Questao03
 
             Console.WriteLine("Diagnóstico:");
 
+            if((valorMoradia + valorEducacao + valorTransporte) > valorRendaMensal)
+            {
+                Console.WriteLine("Seus gastão estão maior que sua renda.");
+
+                Console.WriteLine("Total de gastos: {0}.", FormatarValor(valorMoradia + valorEducacao + valorTransporte));
+
+                return;
+            }
+                
+            
             Console.Write(MENSAGEM_PADRAO, "Moradia", percentualMoradia, 30);
             Console.Write(percentualMoradia > 30 ? String.Format(MENSAGEM_IDEAL, FormatarValor(valorMoradia), FormatarValor(CalcularValor(valorRendaMensal, 30))) : MENSAGEM_RECOMENDADA);
             Console.WriteLine("");
