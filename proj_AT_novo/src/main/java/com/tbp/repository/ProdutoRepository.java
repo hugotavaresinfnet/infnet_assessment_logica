@@ -4,19 +4,19 @@
  * and open the template in the editor.
  */
 package com.tbp.repository;
-import com.tbp.model.Cotacao;
-import java.util.List;
 
 import org.springframework.data.repository.CrudRepository;
+import com.tbp.model.Produto;
+import java.util.List;
 import org.springframework.stereotype.Repository;
-
 /**
  *
  * @author hugot
  */
 @Repository
-public interface CotacaoRepository extends CrudRepository<Cotacao, Integer>{
-    List<Cotacao> findById(int id);
-    List<Cotacao> findByFornecedorIgnoreCaseContaining(String fornecedor);
-    List<Cotacao> findByProdutoDescricaoIgnoreCaseContaining(String descricao);
+public interface ProdutoRepository extends CrudRepository<Produto, Long>{
+    
+    List<Produto> findById(int id);    
+    List<Produto> findByDescricaoIgnoreCaseContaining(String nome);
+    List<Produto> findBySituacaoIgnoreCaseContaining(String situacao);
 }

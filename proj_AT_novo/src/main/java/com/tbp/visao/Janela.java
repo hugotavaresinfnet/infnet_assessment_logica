@@ -6,16 +6,14 @@ import com.tbp.validation.ProdutoValidation;
 import com.tbp.repository.*;
 import com.tbp.model.*;
 import com.tbp.validation.CotacaoValidacao;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.MaskFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +27,9 @@ public class Janela extends javax.swing.JFrame {
     private ProdutoRepository produtoRepository;
     @Autowired
     private CotacaoRepository cotacaoRepository;
-            
+    @Autowired
+    private CotacaoProdutoRepository cotacaoProdutoRepository;
+
     private final boolean MODO_CADASTRO = true;
     private final boolean MODO_LISTAGEM = false;
 
@@ -37,19 +37,23 @@ public class Janela extends javax.swing.JFrame {
     private final int TAB_CATACO = 1;
 
     private ProdutoValidation produtoValidation;
-    private CotacaoValidacao cotacaoValidation; 
-    
+    private CotacaoValidacao cotacaoValidation;
+
     private List<Cotacao> dataSourceCotacoes;
     private List<Produto> dataSourceProdutos;
+    private List<CotacaoProduto> dataSourceCotacaoProduto;
+
+    private CotacaoProduto cotacaoProduto;
 
     public Janela() throws ParseException {
         initComponents();
 
         this.produtoValidation = new ProdutoValidation();
         this.cotacaoValidation = new CotacaoValidacao();
-        
+
         preencherTableProdutos(null);
         preencherTableCotacao(null);
+        preencherTableCotacaoProduto(null);
 
         jtabPrincipal.setSelectedIndex(0);
         jtabProdutos.setSelectedIndex(0);
@@ -58,16 +62,17 @@ public class Janela extends javax.swing.JFrame {
         jcbSituacao.removeAllItems();
         jcbSituacao.addItem("Ativo");
         jcbSituacao.addItem("Inativo");
-        
-        MaskFormatter maskData = new MaskFormatter("##/##/####");    
+
+        MaskFormatter maskData = new MaskFormatter("##/##/####");
         maskData.install(jtxtCotacaoValidade);
-        
+
         NumberFormat amountFormat = NumberFormat.getCurrencyInstance();
-        
 
         modificarEstado(MODO_LISTAGEM);
-        
+
         carregarFornecedores();
+
+        editarCotacaoProduto();
     }
 
     /**
@@ -112,16 +117,24 @@ public class Janela extends javax.swing.JFrame {
         jbtnPesquisarCotacao = new javax.swing.JButton();
         jbtnExportarCotacao = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
+        jPanel8 = new javax.swing.JPanel();
+        jLabel6 = new javax.swing.JLabel();
+        jtxtCotacaoCodigo = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        jtxtCotacaoValidade = new javax.swing.JFormattedTextField();
+        jLabel5 = new javax.swing.JLabel();
+        jcbCotacaoFornecedor = new javax.swing.JComboBox<>();
+        jLabel9 = new javax.swing.JLabel();
+        jtxtCotacaoTotal = new javax.swing.JTextField();
+        jPanel7 = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
         jcbCotacaoProdutos = new javax.swing.JComboBox<>();
         jLabel8 = new javax.swing.JLabel();
         jtxtCotacaoValorProduto = new javax.swing.JFormattedTextField();
-        jLabel5 = new javax.swing.JLabel();
-        jcbCotacaoFornecedor = new javax.swing.JComboBox<>();
-        jtxtCotacaoValidade = new javax.swing.JFormattedTextField();
-        jLabel4 = new javax.swing.JLabel();
-        jtxtCotacaoCodigo = new javax.swing.JTextField();
-        jLabel6 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jtblCotacaoProduto = new javax.swing.JTable();
+        jbtnIncluirProduto = new javax.swing.JButton();
+        jbtnExcluirProduto = new javax.swing.JButton();
         jPanel1 = new javax.swing.JPanel();
         jbtnNovo = new javax.swing.JButton();
         jbtnEditar = new javax.swing.JButton();
@@ -343,7 +356,7 @@ public class Janela extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Código", "Produto", "Valor", "Fornecedor", "Data", "Validade"
+                "Código", "Fornecedor", "Data", "Validade", "Valor"
             }
         ));
         jtblCotacao.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
@@ -351,7 +364,7 @@ public class Janela extends javax.swing.JFrame {
 
         jPanel12.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(102, 102, 102)));
 
-        jcbPesquisaCotacao.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Código", "Fornecedor", "Produto", " " }));
+        jcbPesquisaCotacao.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Código", "Fornecedor" }));
 
         jbtnPesquisarCotacao.setText("Pesquisar");
         jbtnPesquisarCotacao.addActionListener(new java.awt.event.ActionListener() {
@@ -416,15 +429,13 @@ public class Janela extends javax.swing.JFrame {
 
         jtabCotacao.addTab("Listagem", jPanel11);
 
-        jLabel7.setText("Produtos");
+        jPanel8.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(102, 102, 102)));
 
-        jLabel8.setText("Valor");
+        jLabel6.setText("Código");
 
-        jtxtCotacaoValorProduto.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#,##0.00"))));
+        jtxtCotacaoCodigo.setEditable(false);
 
-        jLabel5.setText("Fornecedor");
-
-        jcbCotacaoFornecedor.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jLabel4.setText("Validade");
 
         try {
             jtxtCotacaoValidade.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("##/##/####")));
@@ -432,65 +443,153 @@ public class Janela extends javax.swing.JFrame {
             ex.printStackTrace();
         }
 
-        jLabel4.setText("Validade");
+        jLabel5.setText("Fornecedor");
 
-        jtxtCotacaoCodigo.setEditable(false);
+        jcbCotacaoFornecedor.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
-        jLabel6.setText("Código");
+        jLabel9.setText("Total");
+
+        jtxtCotacaoTotal.setEditable(false);
+
+        javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
+        jPanel8.setLayout(jPanel8Layout);
+        jPanel8Layout.setHorizontalGroup(
+            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel8Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel8Layout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jtxtCotacaoCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 73, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jtxtCotacaoValidade, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jtxtCotacaoTotal, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE))
+                    .addGroup(jPanel8Layout.createSequentialGroup()
+                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jcbCotacaoFornecedor, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addGap(257, 257, 257))
+        );
+        jPanel8Layout.setVerticalGroup(
+            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel8Layout.createSequentialGroup()
+                .addGap(11, 11, 11)
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jtxtCotacaoCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel4)
+                    .addComponent(jtxtCotacaoValidade, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel9)
+                    .addComponent(jtxtCotacaoTotal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(jcbCotacaoFornecedor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jPanel7.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(102, 102, 102)));
+
+        jLabel7.setText("Produtos");
+
+        jcbCotacaoProdutos.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jcbCotacaoProdutosItemStateChanged(evt);
+            }
+        });
+
+        jLabel8.setText("Valor");
+
+        jtxtCotacaoValorProduto.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#,##0.00"))));
+
+        jtblCotacaoProduto.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Código", "Produto", "Valor"
+            }
+        ));
+        jtblCotacaoProduto.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
+        jScrollPane3.setViewportView(jtblCotacaoProduto);
+
+        jbtnIncluirProduto.setText("incluir");
+        jbtnIncluirProduto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnIncluirProdutoActionPerformed(evt);
+            }
+        });
+
+        jbtnExcluirProduto.setText("Excluir");
+        jbtnExcluirProduto.setEnabled(false);
+        jbtnExcluirProduto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnExcluirProdutoActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
+        jPanel7.setLayout(jPanel7Layout);
+        jPanel7Layout.setHorizontalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3)
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jcbCotacaoProdutos, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jtxtCotacaoValorProduto, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jbtnIncluirProduto)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jbtnExcluirProduto)))
+                .addContainerGap())
+        );
+        jPanel7Layout.setVerticalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel7)
+                    .addComponent(jcbCotacaoProdutos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel8)
+                    .addComponent(jtxtCotacaoValorProduto, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jbtnIncluirProduto)
+                    .addComponent(jbtnExcluirProduto))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 292, Short.MAX_VALUE)
+                .addContainerGap())
+        );
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGap(32, 32, 32)
+                .addContainerGap()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel6))
-                        .addGap(24, 24, 24)
-                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jtxtCotacaoValidade, javax.swing.GroupLayout.DEFAULT_SIZE, 412, Short.MAX_VALUE)
-                            .addComponent(jtxtCotacaoCodigo)))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jcbCotacaoFornecedor, javax.swing.GroupLayout.PREFERRED_SIZE, 412, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jcbCotacaoProdutos, javax.swing.GroupLayout.PREFERRED_SIZE, 412, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jtxtCotacaoValorProduto, javax.swing.GroupLayout.PREFERRED_SIZE, 412, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(jtxtCotacaoCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(jtxtCotacaoValidade, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(jcbCotacaoFornecedor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel7)
-                    .addComponent(jcbCotacaoProdutos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jtxtCotacaoValorProduto, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel8))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         jtabCotacao.addTab("Cadastro", jPanel6);
@@ -628,17 +727,20 @@ public class Janela extends javax.swing.JFrame {
         try {
             if (!("").equals(jtxtPesquisaProduto.getText())) {
                 switch (jcbPesquisaProduto.getSelectedIndex()) {
-                    case 0: dataSourceProdutos = produtoRepository.findById(Integer.parseInt(jtxtPesquisaProduto.getText().trim()));
+                    case 0:
+                        dataSourceProdutos = produtoRepository.findById(Integer.parseInt(jtxtPesquisaProduto.getText().trim()));
                         break;
-                    case 1: dataSourceProdutos = produtoRepository.findByDescricaoIgnoreCaseContaining(jtxtPesquisaProduto.getText());
+                    case 1:
+                        dataSourceProdutos = produtoRepository.findByDescricaoIgnoreCaseContaining(jtxtPesquisaProduto.getText());
                         break;
-                    case 2: dataSourceProdutos = produtoRepository.findBySituacaoIgnoreCaseContaining(jtxtPesquisaProduto.getText()); 
+                    case 2:
+                        dataSourceProdutos = produtoRepository.findBySituacaoIgnoreCaseContaining(jtxtPesquisaProduto.getText());
                         break;
                     default:
-                        dataSourceProdutos = (List<Produto>)produtoRepository.findAll();
+                        dataSourceProdutos = (List<Produto>) produtoRepository.findAll();
                 }
             } else {
-                dataSourceProdutos = (List<Produto>)produtoRepository.findAll();
+                dataSourceProdutos = (List<Produto>) produtoRepository.findAll();
             }
 
             preencherTableProdutos(dataSourceProdutos);
@@ -656,15 +758,15 @@ public class Janela extends javax.swing.JFrame {
     }//GEN-LAST:event_jbtnCancelarActionPerformed
 
     private void jtabCotacaoStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jtabCotacaoStateChanged
-        
-        
+
+
     }//GEN-LAST:event_jtabCotacaoStateChanged
 
     private void jtabPrincipalMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jtabPrincipalMouseClicked
         Iterable<Produto> produtos = produtoRepository.findAll();
-        
+
         jcbCotacaoProdutos.removeAllItems();
-        
+
         for (Produto produto : produtos) {
             jcbCotacaoProdutos.addItem(produto);
         }
@@ -674,17 +776,17 @@ public class Janela extends javax.swing.JFrame {
         try {
             if (!("").equals(jtxtPesquisaCotacao.getText())) {
                 switch (jcbPesquisaCotacao.getSelectedIndex()) {
-                    case 0: dataSourceCotacoes = (List<Cotacao>)cotacaoRepository.findById(Integer.parseInt(jtxtPesquisaCotacao.getText().trim()));
+                    case 0:
+                        dataSourceCotacoes = (List<Cotacao>) cotacaoRepository.findById(Integer.parseInt(jtxtPesquisaCotacao.getText().trim()));
                         break;
-                    case 1: dataSourceCotacoes = cotacaoRepository.findByFornecedorIgnoreCaseContaining(jtxtPesquisaCotacao.getText());
-                        break;
-                    case 2: dataSourceCotacoes = cotacaoRepository.findByProdutoDescricaoIgnoreCaseContaining(jtxtPesquisaCotacao.getText()); 
+                    case 1:
+                        dataSourceCotacoes = cotacaoRepository.findByFornecedorIgnoreCaseContaining(jtxtPesquisaCotacao.getText());
                         break;
                     default:
-                        dataSourceCotacoes = (List<Cotacao>)cotacaoRepository.findAll();
+                        dataSourceCotacoes = (List<Cotacao>) cotacaoRepository.findAll();
                 }
             } else {
-                dataSourceCotacoes = (List<Cotacao>)cotacaoRepository.findAll();
+                dataSourceCotacoes = (List<Cotacao>) cotacaoRepository.findAll();
             }
 
             preencherTableCotacao(dataSourceCotacoes);
@@ -697,30 +799,78 @@ public class Janela extends javax.swing.JFrame {
     }//GEN-LAST:event_jbtnPesquisarCotacaoActionPerformed
 
     private void jbtnExportarCotacaoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnExportarCotacaoActionPerformed
-        if(dataSourceCotacoes != null && dataSourceCotacoes.size() > 0){
+        if (dataSourceCotacoes != null && dataSourceCotacoes.size() > 0) {
             try {
                 cotacaoValidation.exportarCotacoes(dataSourceCotacoes);
                 JOptionPane.showMessageDialog(null, "Cotaçoes exportada com sucesso.", "ACME", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(null, "Erro ao exportar dodos. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
             }
-        }else{
+        } else {
             JOptionPane.showMessageDialog(null, "Selecione as cotações para exportação.", "ACME", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_jbtnExportarCotacaoActionPerformed
 
     private void jbtnExportacaoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnExportacaoActionPerformed
-        if(dataSourceProdutos != null && dataSourceProdutos.size() > 0){
+        if (dataSourceProdutos != null && dataSourceProdutos.size() > 0) {
             try {
                 produtoValidation.exportarProduto(dataSourceProdutos);
                 JOptionPane.showMessageDialog(null, "Produtos exportado com sucesso.", "ACME", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(null, "Erro ao exportar dodos. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
             }
-        }else{
+        } else {
             JOptionPane.showMessageDialog(null, "Selecione os produtos para exportação.", "ACME", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_jbtnExportacaoActionPerformed
+
+    private void jbtnIncluirProdutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnIncluirProdutoActionPerformed
+        try {
+            if (this.cotacaoProduto == null) {
+                salvarCotacaoProduto();
+            } else {
+                alterarCotacaoProduto();
+            }
+            
+            atualizarCotacao();
+
+            int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+            preencherTableCotacaoProduto(cotacaoProdutoRepository.findByCotacaoId(cotacaoId));
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Erro ao incluir produto na cotação. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_jbtnIncluirProdutoActionPerformed
+
+    private void jcbCotacaoProdutosItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jcbCotacaoProdutosItemStateChanged
+        jtxtCotacaoValorProduto.requestFocus();
+    }//GEN-LAST:event_jcbCotacaoProdutosItemStateChanged
+
+    private void jbtnExcluirProdutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnExcluirProdutoActionPerformed
+        try {
+            Object[] options = {"Sim", "Não"};
+            int opcao = JOptionPane.showOptionDialog(null, "Deseja excluir o item selecionado?", "ACME", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+
+            if (opcao == 0) {
+                cotacaoProdutoRepository.deleteById(this.cotacaoProduto.getId());
+
+                int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+                preencherTableCotacaoProduto(cotacaoProdutoRepository.findByCotacaoId(cotacaoId));
+
+                atualizarTotalCotacao();
+
+                jtxtCotacaoValorProduto.setText("");
+                jtxtCotacaoValorProduto.setValue(null);
+                
+                this.cotacaoProduto = null;
+                jbtnIncluirProduto.setText("Incluir");
+
+                atualizarCotacao();
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Erro ao excluir produto da cotação. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_jbtnExcluirProdutoActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -734,6 +884,7 @@ public class Janela extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
@@ -743,12 +894,17 @@ public class Janela extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPanel7;
+    private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JButton jbtnCancelar;
     private javax.swing.JButton jbtnEditar;
+    private javax.swing.JButton jbtnExcluirProduto;
     private javax.swing.JButton jbtnExportacao;
     private javax.swing.JButton jbtnExportarCotacao;
+    private javax.swing.JButton jbtnIncluirProduto;
     private javax.swing.JButton jbtnNovo;
     private javax.swing.JButton jbtnPesquisarCotacao;
     private javax.swing.JButton jbtnPesquisarProduto;
@@ -764,9 +920,11 @@ public class Janela extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jtabPrincipal;
     private javax.swing.JTabbedPane jtabProdutos;
     private javax.swing.JTable jtblCotacao;
+    private javax.swing.JTable jtblCotacaoProduto;
     private javax.swing.JTable jtblProdutos;
     private javax.swing.JTextField jtxtCodigo;
     private javax.swing.JTextField jtxtCotacaoCodigo;
+    private javax.swing.JTextField jtxtCotacaoTotal;
     private javax.swing.JFormattedTextField jtxtCotacaoValidade;
     private javax.swing.JFormattedTextField jtxtCotacaoValorProduto;
     private javax.swing.JTextField jtxtDescricao;
@@ -775,14 +933,21 @@ public class Janela extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private void preencherTableProdutos(List<Produto> produtos) {
+
+        jtblProdutos.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"Código", "Descrição", "Situação",}) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+
         DefaultTableModel model = (DefaultTableModel) jtblProdutos.getModel();
         model.setNumRows(0);
 
         jtblProdutos.getColumnModel().getColumn(0).setWidth(50);
         jtblProdutos.getColumnModel().getColumn(0).setHeaderValue("Código");
-        jtblProdutos.getColumnModel().getColumn(1).setPreferredWidth(500); 
+        jtblProdutos.getColumnModel().getColumn(1).setPreferredWidth(500);
         jtblProdutos.getColumnModel().getColumn(1).setHeaderValue("Descrição");
-        jtblProdutos.getColumnModel().getColumn(2).setPreferredWidth(100); 
+        jtblProdutos.getColumnModel().getColumn(2).setPreferredWidth(100);
         jtblProdutos.getColumnModel().getColumn(2).setHeaderValue("Situação");
 
         if (produtos != null) {
@@ -795,45 +960,74 @@ public class Janela extends javax.swing.JFrame {
             }
         }
     }
-    
-    private void preencherTableCotacao(List<Cotacao> cotacoes){
+
+    private void preencherTableCotacao(List<Cotacao> cotacoes) {
+
+        jtblCotacao.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"Código", "Fornecedor", "Data", "Validade", "Valor",}) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+
         DefaultTableModel model = (DefaultTableModel) jtblCotacao.getModel();
         model.setNumRows(0);
 
         jtblCotacao.getColumnModel().getColumn(0).setWidth(50);
-        jtblCotacao.getColumnModel().getColumn(0).setHeaderValue("Código");
         jtblCotacao.getColumnModel().getColumn(0).setCellRenderer(cotacaoValidation.alingTable("C"));
-        
-        jtblCotacao.getColumnModel().getColumn(1).setPreferredWidth(300); 
-        jtblCotacao.getColumnModel().getColumn(1).setHeaderValue("Produto");
-        
-        jtblCotacao.getColumnModel().getColumn(2).setPreferredWidth(100); 
-        jtblCotacao.getColumnModel().getColumn(2).setHeaderValue("Valor");        
+
+        jtblCotacao.getColumnModel().getColumn(1).setPreferredWidth(300);
+
+        jtblCotacao.getColumnModel().getColumn(2).setPreferredWidth(100);
         jtblCotacao.getColumnModel().getColumn(2).setCellRenderer(cotacaoValidation.alingTable("R"));
-        
-        jtblCotacao.getColumnModel().getColumn(3).setPreferredWidth(200); 
-        jtblCotacao.getColumnModel().getColumn(3).setHeaderValue("Fornecedor");
-        
-        jtblCotacao.getColumnModel().getColumn(4).setPreferredWidth(100); 
-        jtblCotacao.getColumnModel().getColumn(4).setHeaderValue("Data");
+
+        jtblCotacao.getColumnModel().getColumn(3).setPreferredWidth(100);
+        jtblCotacao.getColumnModel().getColumn(3).setCellRenderer(cotacaoValidation.alingTable("R"));
+
+        jtblCotacao.getColumnModel().getColumn(4).setPreferredWidth(100);
         jtblCotacao.getColumnModel().getColumn(4).setCellRenderer(cotacaoValidation.alingTable("R"));
-        
-        jtblCotacao.getColumnModel().getColumn(5).setPreferredWidth(100); 
-        jtblCotacao.getColumnModel().getColumn(5).setHeaderValue("Validade");
-        jtblCotacao.getColumnModel().getColumn(5).setCellRenderer(cotacaoValidation.alingTable("R"));
 
         if (cotacoes != null) {
             for (Cotacao cotacao : cotacoes) {
                 model.addRow(new Object[]{
                     cotacao.getId(),
-                    cotacao.getProduto().getDescricao(),
-                    cotacaoValidation.formatarMoeda(cotacao.getValorProduto()),
                     cotacao.getFornecedor(),
                     cotacaoValidation.formatarData(cotacao.getData()),
-                    cotacaoValidation.formatarData(cotacao.getValidade())
+                    cotacao.getValidade() != null ? cotacaoValidation.formatarData(cotacao.getValidade()) : "",
+                    cotacaoValidation.formatarMoeda(cotacao.getValorTotal())
                 });
             }
         }
+    }
+
+    private void preencherTableCotacaoProduto(List<CotacaoProduto> produtos) {
+
+        jtblCotacaoProduto.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"Código", "Produto", "Valor",}) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+
+        DefaultTableModel model = (DefaultTableModel) jtblCotacaoProduto.getModel();
+        model.setNumRows(0);
+
+        jtblCotacaoProduto.getColumnModel().getColumn(0).setWidth(50);
+        jtblCotacaoProduto.getColumnModel().getColumn(1).setPreferredWidth(500);
+        jtblCotacaoProduto.getColumnModel().getColumn(2).setPreferredWidth(100);
+        jtblCotacaoProduto.getColumnModel().getColumn(2).setCellRenderer(cotacaoValidation.alingTable("R"));
+
+        if (produtos != null) {
+            for (CotacaoProduto produto : produtos) {
+                model.addRow(new Object[]{
+                    produto.getProduto().getId(),
+                    produto.getProduto().getDescricao(),
+                    cotacaoValidation.formatarMoeda(produto.getValorProuto())
+                });
+            }
+        }
+    }
+
+    public boolean isCellEditable() {
+        return false;
     }
 
     private void cadastrarProduto() {
@@ -849,7 +1043,7 @@ public class Janela extends javax.swing.JFrame {
 
             JOptionPane.showMessageDialog(null, "Produto salvo com sucesso.", "ACME", JOptionPane.INFORMATION_MESSAGE);
 
-            preencherTableProdutos((List<Produto>)produtoRepository.findById(codigo));
+            preencherTableProdutos((List<Produto>) produtoRepository.findById(codigo));
 
             modificarEstado(MODO_LISTAGEM);
         } catch (ProdutoInvalidoException e) {
@@ -858,31 +1052,28 @@ public class Janela extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "Erro inesperado. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
     private void cadastrarCotacao() {
         try {
             Cotacao cotacao = new Cotacao();
-            cotacao.setId("".equals(jtxtCotacaoCodigo.getText()) ? 0 : Integer.parseInt(jtxtCotacaoCodigo.getText())) ;
+            cotacao.setId("".equals(jtxtCotacaoCodigo.getText()) ? 0 : Integer.parseInt(jtxtCotacaoCodigo.getText()));
             cotacao.setData(new Date());
             cotacao.setValidade(cotacaoValidation.formatarDate(jtxtCotacaoValidade.getText()));
-            cotacao.setProduto((Produto) jcbCotacaoProdutos.getSelectedItem());
-            
-            String valor = jtxtCotacaoValorProduto.getText().replace(".", "").replace(",", ".");
-            
-            cotacao.setValorProduto(Double.parseDouble(valor));
+            String valor = jtxtCotacaoTotal.getText().replace(".", "").replace(",", ".");
+            cotacao.setValorTotal(Double.parseDouble(valor));
             cotacao.setFornecedor(jcbCotacaoFornecedor.getSelectedItem().toString());
-            
+
             cotacaoValidation.validar(cotacao);
-            
+
             cotacaoRepository.save(cotacao);
-            
+
             JOptionPane.showMessageDialog(null, "Cotação cadastrada com sucesso.", "ACME", JOptionPane.INFORMATION_MESSAGE);
-            
-            preencherTableCotacao((List<Cotacao>)cotacaoRepository.findAll());
-            
+
+            preencherTableCotacao((List<Cotacao>) cotacaoRepository.findAll());
+
             modificarEstado(MODO_LISTAGEM);
-            
-        }catch(CotacaoInvalidaException e){
+
+        } catch (CotacaoInvalidaException e) {
             JOptionPane.showMessageDialog(null, e.getMessage(), "ACME", JOptionPane.WARNING_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "Erro inesperado. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
@@ -894,7 +1085,22 @@ public class Janela extends javax.swing.JFrame {
     }
 
     private void novaCotacao() {
-        modificarEstado(MODO_CADASTRO);
+
+        try {
+            Cotacao cotacao = new Cotacao();
+            cotacao.setData(new Date());
+            cotacao.setValorTotal(0.0);
+
+            Integer codigo = cotacaoRepository.save(cotacao).getId();
+
+            jtxtCotacaoCodigo.setText(codigo.toString());
+            jtxtCotacaoTotal.setText(cotacaoValidation.formatarMoeda(cotacao.getValorTotal()));
+
+            modificarEstado(MODO_CADASTRO);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Erro ao iniciar cotação. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void editarProduto() {
@@ -910,24 +1116,33 @@ public class Janela extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "Selecione o produto para poder editar.", "ACME", JOptionPane.INFORMATION_MESSAGE);
         }
     }
-    
+
     private void editarCotacao() {
-        int linha = jtblCotacao.getSelectedRow(); // retorna a linha selecionada pelo usuario
+        int linha = jtblCotacao.getSelectedRow();
 
         if (linha >= 0) {
-            Integer codigo = Integer.parseInt(jtblCotacao.getValueAt(linha, 0).toString());
-            Optional<Cotacao> cotacao = cotacaoRepository.findById(codigo);
-            
-            jtxtCotacaoCodigo.setText(cotacao.get().getId().toString());
-            jtxtCotacaoValidade.setText(cotacaoValidation.formatarData(cotacao.get().getValidade()));
-            jcbCotacaoProdutos.getModel().setSelectedItem(cotacao.get().getProduto());
-            jcbCotacaoFornecedor.setSelectedItem(cotacao.get().getFornecedor());
-            jtxtCotacaoValorProduto.setText(cotacaoValidation.formatarMoeda(cotacao.get().getValorProduto()).trim());
-            
-            modificarEstado(MODO_CADASTRO);
+            try {
+                int codigo = Integer.parseInt(jtblCotacao.getValueAt(linha, 0).toString());
+                Cotacao cotacao = cotacaoRepository.findById(codigo);
+
+                jtxtCotacaoCodigo.setText(cotacao.getId().toString());
+                if (cotacao.getValidade() != null) {
+                    jtxtCotacaoValidade.setText(cotacaoValidation.formatarData(cotacao.getValidade()));
+                }
+                jcbCotacaoFornecedor.setSelectedItem(cotacao.getFornecedor());
+                jtxtCotacaoTotal.setText(cotacaoValidation.formatarMoeda(cotacao.getValorTotal()));
+
+                dataSourceCotacaoProduto = cotacaoProdutoRepository.findByCotacaoId(cotacao.getId());
+
+                preencherTableCotacaoProduto(dataSourceCotacaoProduto);
+
+                modificarEstado(MODO_CADASTRO);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Erro ao editar cotação", "ACME", JOptionPane.INFORMATION_MESSAGE);
+            }
+
         }
     }
-
 
     //ESTADOS DA TELA
     private void modificarEstado(boolean estado) {
@@ -952,6 +1167,7 @@ public class Janela extends javax.swing.JFrame {
             } else {
                 jtabCotacao.setSelectedIndex(0);
                 limparCadastroCotacao();
+                limparTabelaCotacaoProduto();
             }
         }
     }
@@ -961,25 +1177,136 @@ public class Janela extends javax.swing.JFrame {
         jtxtDescricao.setText("");
         jcbSituacao.setSelectedIndex(0);
     }
-    
-    private void limparCadastroCotacao()
-    {
+
+    private void limparCadastroCotacao() {
         jtxtCotacaoCodigo.setText("");
-        jtxtCotacaoValidade.setText(""); 
+        jtxtCotacaoValidade.setText("");
         jtxtCotacaoValidade.setValue(null);
         jcbCotacaoProdutos.setSelectedIndex(0);
         jcbCotacaoFornecedor.setSelectedIndex(0);
         jtxtCotacaoValorProduto.setText("");
     }
-    
-    private void carregarFornecedores()
-    {
+
+    private void carregarFornecedores() {
         String[] fornecedores = {"Fornecedor 01", "Fornecedor 02", "Fornecedor 03", "Fornecedor 04"};
-        
+
         jcbCotacaoFornecedor.removeAllItems();
-        
+
         for (int i = 0; i < fornecedores.length; i++) {
             jcbCotacaoFornecedor.addItem(fornecedores[i]);
         }
     }
+
+    private void limparTabelaCotacaoProduto() {
+        DefaultTableModel modelo = (DefaultTableModel) jtblCotacaoProduto.getModel();
+        modelo.setNumRows(0);
+    }
+
+    private void editarCotacaoProduto() {
+        jtblCotacaoProduto.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int linha = jtblCotacaoProduto.getSelectedRow();
+                    Integer codigo = Integer.parseInt(jtblCotacaoProduto.getValueAt(linha, 0).toString());
+                    Produto produto = produtoRepository.findById(codigo).get(0);
+
+                    int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+
+                    cotacaoProduto = cotacaoProdutoRepository.findByCotacaoIdAndProdutoId(cotacaoId, codigo);
+
+                    atualizarTotalCotacao();
+
+                    jcbCotacaoProdutos.getModel().setSelectedItem(produto);
+                    jtxtCotacaoValorProduto.setText(jtblCotacaoProduto.getValueAt(linha, 2).toString());
+
+                    jbtnIncluirProduto.setText("Alterar");
+                    jbtnExcluirProduto.setEnabled(true);
+                }
+            }
+        });
+    }
+
+    private void salvarCotacaoProduto() {
+        Produto produto = (Produto) jcbCotacaoProdutos.getSelectedItem();
+        int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+
+        CotacaoProduto cotacaoProduto = cotacaoProdutoRepository.findByCotacaoIdAndProdutoId(cotacaoId, produto.getId());
+
+        if (cotacaoProduto == null) {
+            if (!("").equals(jtxtCotacaoValorProduto.getText().trim())) {
+                cotacaoProduto = new CotacaoProduto();
+                Cotacao cotacao = cotacaoRepository.findById(cotacaoId);
+                cotacaoProduto.setCotacao(cotacao);
+                cotacaoProduto.setProduto(produto);
+                String valor = jtxtCotacaoValorProduto.getText().replace(".", "").replace(",", ".");
+                cotacaoProduto.setValorProuto(Double.parseDouble(valor));
+
+                cotacaoProdutoRepository.save(cotacaoProduto);
+
+                atualizarTotalCotacao();
+
+                jtxtCotacaoValorProduto.setText("");
+                jtxtCotacaoValorProduto.setValue(null);
+                jbtnExcluirProduto.setEnabled(false);
+            } else {
+                JOptionPane.showMessageDialog(null, "Informe o valor do produto.", "ACME", JOptionPane.WARNING_MESSAGE);
+                jtxtCotacaoValorProduto.requestFocus();
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Produto já incluido na cotação.", "ACME", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void alterarCotacaoProduto() {
+        try {
+            String valor = jtxtCotacaoValorProduto.getText().replace(".", "").replace(",", ".");
+            this.cotacaoProduto.setValorProuto(Double.parseDouble(valor));
+
+            cotacaoProdutoRepository.save(this.cotacaoProduto);
+
+            int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+            dataSourceCotacaoProduto = cotacaoProdutoRepository.findByCotacaoId(cotacaoId);
+
+            atualizarTotalCotacao();
+
+            jtxtCotacaoValorProduto.setText("");
+            jtxtCotacaoValorProduto.setValue(null);
+
+            this.cotacaoProduto = null;
+            jbtnIncluirProduto.setText("Incluir");
+            jbtnExcluirProduto.setEnabled(false);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Erro ao editar produto. \nDetalhe: " + e.getMessage(), "ACME", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void atualizarTotalCotacao() {
+        double valorTotal = 0;
+
+        int cotacaoId = Integer.parseInt(jtxtCotacaoCodigo.getText());
+        this.dataSourceCotacaoProduto = cotacaoProdutoRepository.findByCotacaoId(cotacaoId);
+
+        for (CotacaoProduto dataSourceCotacoe : dataSourceCotacaoProduto) {
+            valorTotal += dataSourceCotacoe.getValorProuto();
+        }
+
+        jtxtCotacaoTotal.setText(cotacaoValidation.formatarMoeda(valorTotal));
+    }
+
+    private void atualizarCotacao() throws ParseException, Exception {
+        Cotacao cotacao = new Cotacao();
+        cotacao.setId("".equals(jtxtCotacaoCodigo.getText()) ? 0 : Integer.parseInt(jtxtCotacaoCodigo.getText()));
+        cotacao.setData(new Date());
+        cotacao.setValidade(cotacaoValidation.formatarDate(jtxtCotacaoValidade.getText()));
+        String valor = jtxtCotacaoTotal.getText().replace(".", "").replace(",", ".");
+        cotacao.setValorTotal(Double.parseDouble(valor));
+        cotacao.setFornecedor(jcbCotacaoFornecedor.getSelectedItem().toString());
+
+        cotacaoValidation.validar(cotacao);
+
+        cotacaoRepository.save(cotacao);
+        
+        preencherTableCotacao((List<Cotacao>) cotacaoRepository.findAll());
+    }
+
 }

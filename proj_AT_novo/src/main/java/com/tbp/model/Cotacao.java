@@ -5,50 +5,37 @@
  */
 package com.tbp.model;
 
-import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 
 /**
  *
  * @author hugot
  */
 @Entity
-@Table(name = "cotacao")
 public class Cotacao {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    @Column(name = "data")
     private Date data;
-    @Column(name = "validade")
     private Date validade;
-    @Column(name = "fornecedor")
-    private String fornecedor;
-    @ManyToOne()
-    @JoinColumn(name = "id_produto")
-    private Produto produto;
-    @Column(name="valor_produto")
-    private Double valorProduto;
-
+    private String fornecedor;  
+    private Double valorTotal;
+    
     public Cotacao() {
         
     }
 
-    public Cotacao(Date data, Date validade, String fornecedor, Produto produto, Double valorProduto) {
+    public Cotacao(Date data, Date validade, String fornecedor, Double valorTotal) {
         this.data = data;
         this.validade = validade;
         this.fornecedor = fornecedor;
-        this.produto = produto;
-        this.valorProduto = valorProduto;
+        this.valorTotal = valorTotal;
     }
 
     public Integer getId() {
@@ -83,21 +70,12 @@ public class Cotacao {
         this.fornecedor = fornecedor;
     }
 
-    public Produto getProduto() {
-        return produto;
+    public Double getValorTotal() {
+        return valorTotal;
     }
 
-    public void setProduto(Produto produto) {
-        this.produto = produto;
+    public void setValorTotal(Double valorTotal) {
+        this.valorTotal = valorTotal;
     }
-
-    public Double getValorProduto() {
-        return valorProduto;
-    }
-
-    public void setValorProduto(Double valorProduto) {
-        this.valorProduto = valorProduto;
-    }
-    
     
 }

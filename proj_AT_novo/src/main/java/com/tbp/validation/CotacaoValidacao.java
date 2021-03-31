@@ -40,12 +40,6 @@ public class CotacaoValidacao {
         if(isData(cotacao.getValidade().toString()))
             throw new CotacaoInvalidaException("Validade da contação inválida.");
         
-        if(cotacao.getProduto() == null)
-            throw new CotacaoInvalidaException("Produto da contação não informada.");
-        
-        if(cotacao.getValorProduto() == 0.0)
-            throw new CotacaoInvalidaException("Valor produto da contação não informada.");
-        
         if(("").equals(cotacao.getFornecedor()))
             throw new CotacaoInvalidaException("Fornecedor da contação não informada.");
     }
@@ -119,10 +113,6 @@ public class CotacaoValidacao {
             StringBuilder builder = new StringBuilder();
             for (Cotacao cotacoe : cotacoes) {
                 builder.append(cotacoe.getId().toString());
-                builder.append(";");
-                builder.append(cotacoe.getProduto().getDescricao());
-                builder.append(";");
-                builder.append(formatarMoeda(cotacoe.getValorProduto()));
                 builder.append(";");
                 builder.append(cotacoe.getFornecedor());
                 builder.append(";");

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface CotacaoRepository extends CrudRepository<Cotacao, Integer>{
-    List<Cotacao> findById(int id);
+    Cotacao findById(int id);
     List<Cotacao> findByFornecedorIgnoreCaseContaining(String fornecedor);
-    List<Cotacao> findByProdutoDescricaoIgnoreCaseContaining(String descricao);
+    //List<Cotacao> findByProdutoDescricaoIgnoreCaseContaining(String descricao);
 }
