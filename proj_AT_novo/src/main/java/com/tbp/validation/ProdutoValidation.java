@@ -43,6 +43,13 @@ public class ProdutoValidation {
             FileWriter fileWrite = new FileWriter(file, false);
             StringBuilder builder = new StringBuilder();
             
+            builder.append("CODIGO");
+            builder.append(";");
+            builder.append("DESCRICAO");
+            builder.append(";");
+            builder.append("SITUACAO");
+            builder.append("\n");
+            
             for (Produto produto : produtos) {
                 builder.append(produto.getId().toString());
                 builder.append(";");

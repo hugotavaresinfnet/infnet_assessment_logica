@@ -111,6 +111,18 @@ public class CotacaoValidacao {
             File file = new File(fileChooser.getSelectedFile(),"cotacoes.csv");
             FileWriter fileWrite = new FileWriter(file, false);
             StringBuilder builder = new StringBuilder();
+            
+            builder.append("CODIGO");
+            builder.append(";");
+            builder.append("FORNECEDOR");
+            builder.append(";");
+            builder.append("DATA");
+            builder.append(";");
+            builder.append("VALIDADE");
+            builder.append(";");
+            builder.append("VALOR");
+            builder.append("\n");
+            
             for (Cotacao cotacoe : cotacoes) {
                 builder.append(cotacoe.getId().toString());
                 builder.append(";");
@@ -119,6 +131,8 @@ public class CotacaoValidacao {
                 builder.append(formatarData(cotacoe.getData()));
                 builder.append(";");
                 builder.append(formatarData(cotacoe.getValidade()));
+                builder.append(";");
+                builder.append(formatarMoeda(cotacoe.getValorTotal()));
                 builder.append("\n");
             }
             
