@@ -217,7 +217,7 @@ public class Janela extends javax.swing.JFrame {
             }
         });
 
-        jcbPesquisaProduto.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Código", "Descrição", "Situação", " " }));
+        jcbPesquisaProduto.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Código", "Descrição", "Situação" }));
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
         jPanel10.setLayout(jPanel10Layout);
@@ -726,6 +726,9 @@ public class Janela extends javax.swing.JFrame {
     private void jbtnPesquisarProdutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnPesquisarProdutoActionPerformed
         try {
             if (!("").equals(jtxtPesquisaProduto.getText())) {
+                
+                String filtro = jtxtPesquisaProduto.getText();
+                
                 switch (jcbPesquisaProduto.getSelectedIndex()) {
                     case 0:
                         dataSourceProdutos = produtoRepository.findById(Integer.parseInt(jtxtPesquisaProduto.getText().trim()));
@@ -1123,7 +1126,7 @@ public class Janela extends javax.swing.JFrame {
         if (linha >= 0) {
             try {
                 int codigo = Integer.parseInt(jtblCotacao.getValueAt(linha, 0).toString());
-                Cotacao cotacao = cotacaoRepository.findById(codigo);
+                Cotacao cotacao = cotacaoRepository.findById(codigo).get(0);
 
                 jtxtCotacaoCodigo.setText(cotacao.getId().toString());
                 if (cotacao.getValidade() != null) {
@@ -1235,7 +1238,7 @@ public class Janela extends javax.swing.JFrame {
         if (cotacaoProduto == null) {
             if (!("").equals(jtxtCotacaoValorProduto.getText().trim())) {
                 cotacaoProduto = new CotacaoProduto();
-                Cotacao cotacao = cotacaoRepository.findById(cotacaoId);
+                Cotacao cotacao = cotacaoRepository.findById(cotacaoId).get(0);
                 cotacaoProduto.setCotacao(cotacao);
                 cotacaoProduto.setProduto(produto);
                 String valor = jtxtCotacaoValorProduto.getText().replace(".", "").replace(",", ".");

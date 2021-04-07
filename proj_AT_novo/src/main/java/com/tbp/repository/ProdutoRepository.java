@@ -8,6 +8,7 @@ package com.tbp.repository;
 import org.springframework.data.repository.CrudRepository;
 import com.tbp.model.Produto;
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 /**
  *
@@ -17,6 +18,6 @@ import org.springframework.stereotype.Repository;
 public interface ProdutoRepository extends CrudRepository<Produto, Long>{
     
     List<Produto> findById(int id);    
-    List<Produto> findByDescricaoIgnoreCaseContaining(String nome);
+    List<Produto> findByDescricaoIgnoreCaseContaining(String nome);    
     List<Produto> findBySituacaoIgnoreCaseContaining(String situacao);
 }
